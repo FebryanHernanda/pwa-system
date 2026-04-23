@@ -1,73 +1,101 @@
-# React + TypeScript + Vite
+# Demo PWA System (DemoPOS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikasi kasir (POS) berbasis React + TypeScript + Vite dengan pendekatan offline-first menggunakan PWA dan IndexedDB (Dexie).
 
-Currently, two official plugins are available:
+## Fitur Utama
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Offline-first: data produk dan transaksi tetap bisa dipakai tanpa internet
+- PWA installable (`standalone`) untuk pengalaman seperti aplikasi native
+- Status koneksi real-time (`LIVE ACCESS` / `LOCAL ONLY`)
+- Pencarian produk lokal (client-side)
+- Keranjang belanja dengan mode Retail dan Wholesale
+- Checkout menyimpan transaksi ke database lokal
+- Update stok otomatis saat checkout
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- TypeScript
+- Vite 8
+- Tailwind CSS 4
+- Dexie + dexie-react-hooks
+- vite-plugin-pwa
+- lucide-react
 
-## Expanding the ESLint configuration
+## Struktur Project
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```txt
+src/
+  App.tsx           # UI utama kasir + logic cart/checkout
+  main.tsx          # bootstrap app + seeding data awal
+  db/schema.ts      # schema IndexedDB (products, sales)
+  index.css         # styling global + tema
+public/
+  pwa-192x192.png
+  pwa-512x512.png
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Menjalankan Project
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 1) Install dependency
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
+
+### 2) Jalankan development server
+
+```bash
+npm run dev
+```
+
+### 3) Build production
+
+```bash
+npm run build
+```
+
+### 4) Preview build
+
+```bash
+npm run preview
+```
+
+## Konfigurasi PWA
+
+Konfigurasi ada di `vite.config.ts` menggunakan `VitePWA`:
+
+- `registerType: "autoUpdate"`
+- Manifest app:
+- `name: DemoPOS`
+- `short_name: D-POS`
+- `display: standalone`
+- icon `192x192` dan `512x512`
+
+## Data Model (IndexedDB)
+
+### `products`
+
+- `id`
+- `name`
+- `basePrice`
+- `stockInBaseUnit`
+- `unitName`
+- `wholesaleUnit`
+- `conversionRatio`
+
+### `sales`
+
+- `id`
+- `items` (snapshot cart item)
+- `totalPrice`
+- `timestamp`
+- `synced` (status sinkronisasi ke backend, saat ini `false`)
+
+## Alur Utama
+
+1. App startup melakukan pengecekan tabel produk.
+2. Jika kosong, app melakukan seeding data awal di `main.tsx`.
+3. User mencari produk dan menambah item ke cart (retail/wholesale).
+4. Saat checkout, transaksi disimpan ke `sales` dan stok di `products` dikurangi sesuai `finalQty`.
+5. Cart di-reset setelah transaksi berhasil.
